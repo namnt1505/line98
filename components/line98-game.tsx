@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { Undo2 } from "lucide-react"
+import { Undo2, Volume2, VolumeX } from "lucide-react"
 
 // Ball colors
 const COLORS = ["red", "blue", "green", "yellow", "purple"]
@@ -12,6 +12,7 @@ const GRID_SIZE = 9
 const BALLS_PER_TURN = 3
 const REQUIRED_LINE_LENGTH = 5
 const MAX_HISTORY = 10 // Maximum number of states to keep in history
+const BACKGROUND_MUSIC_URL = "https://storage.googleapis.com/namnt-line98/_next/static/sound/Vibe.mp3"
 
 type Ball = {
   id: number
@@ -48,15 +49,30 @@ export default function Line98Game() {
   const [ballIdCounter, setBallIdCounter] = useState(0)
   const [clickedBall, setClickedBall] = useState<Position | null>(null)
   const [gameHistory, setGameHistory] = useState<GameState[]>([])
+  const [isMuted, setIsMuted] = useState(false)
   const scoreAudioRef = useRef<HTMLAudioElement | null>(null)
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null)
 
   // Initialize the game
   useEffect(() => {
-    // Create audio element for score sound
+    // Create audio elements
     scoreAudioRef.current = new Audio("/score-sound.mp3")
 
-    // Try to load saved game from localStorage
+    // Create and set up background music
+    bgMusicRef.current = new Audio(BACKGROUND_MUSIC_URL)
+    if (bgMusicRef.current) {
+      bgMusicRef.current.loop = true
+      bgMusicRef.current.volume = 0.5 // Set volume to 50%
+    }
+
+    // Try to load saved game and settings from localStorage
     const savedGame = localStorage.getItem("line98GameState")
+    const savedMuteState = localStorage.getItem("line98MuteState")
+
+    if (savedMuteState) {
+      setIsMuted(savedMuteState === "true")
+    }
+
     if (savedGame) {
       try {
         const { grid, score, nextBalls, ballIdCounter, gameOver } = JSON.parse(savedGame)
@@ -69,6 +85,7 @@ export default function Line98Game() {
         // Initialize history with the loaded state
         setGameHistory([{ grid, score, nextBalls, ballIdCounter, gameOver }])
       } catch (e) {
+        console.error("Error parsing saved game state:", e)
         // If there's an error parsing the saved game, initialize a new one
         initializeGame()
       }
@@ -76,14 +93,53 @@ export default function Line98Game() {
       initializeGame()
     }
 
+    // Add event listener for user interaction to start music
+    const handleUserInteraction = () => {
+      if (bgMusicRef.current && !isMuted) {
+        bgMusicRef.current.play().catch((e) => {
+          console.log("Background music autoplay failed:", e)
+        })
+      }
+      // Remove the event listeners after first interaction
+      document.removeEventListener("click", handleUserInteraction)
+      document.removeEventListener("keydown", handleUserInteraction)
+    }
+
+    document.addEventListener("click", handleUserInteraction)
+    document.addEventListener("keydown", handleUserInteraction)
+
     return () => {
       // Cleanup audio
       if (scoreAudioRef.current) {
         scoreAudioRef.current.pause()
         scoreAudioRef.current = null
       }
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause()
+        bgMusicRef.current = null
+      }
+
+      // Remove event listeners
+      document.removeEventListener("click", handleUserInteraction)
+      document.removeEventListener("keydown", handleUserInteraction)
     }
-  }, [])
+  }, []) // Empty dependency array - only run once on mount
+
+  // Update background music when mute state changes
+  useEffect(() => {
+    if (bgMusicRef.current) {
+      if (isMuted) {
+        bgMusicRef.current.pause()
+      } else {
+        bgMusicRef.current.play().catch((e) => {
+          console.log("Background music play failed:", e)
+        })
+      }
+
+      // Save mute state to localStorage
+      localStorage.setItem("line98MuteState", isMuted.toString())
+    }
+  }, [isMuted])
 
   useEffect(() => {
     // Save game state to localStorage whenever it changes
@@ -445,7 +501,7 @@ export default function Line98Game() {
       setScore((prev) => prev + pointsScored)
 
       // Play score sound
-      if (pointsScored > 0 && scoreAudioRef.current) {
+      if (pointsScored > 0 && scoreAudioRef.current && !isMuted) {
         scoreAudioRef.current.currentTime = 0
         scoreAudioRef.current.play().catch((e) => {
           // Handle autoplay restrictions
@@ -552,12 +608,25 @@ export default function Line98Game() {
     setGameHistory(newHistory)
   }
 
+  const toggleMute = () => {
+    setIsMuted(!isMuted)
+  }
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span>Score: {score}</span>
           <div className="flex gap-2">
+            <Button
+              onClick={toggleMute}
+              variant="outline"
+              size="sm"
+              title={isMuted ? "Unmute" : "Mute"}
+              className="px-2"
+            >
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
             <Button
               onClick={handleUndo}
               variant="outline"
@@ -618,7 +687,7 @@ export default function Line98Game() {
         <p>Connect 5 or more balls of the same color to score points. The game ends when the board is full.</p>
       </CardFooter>
 
-      {/* Hidden audio element for score sound */}
+      {/* Hidden audio elements */}
       <audio src="/score-sound.mp3" preload="auto" ref={scoreAudioRef} />
     </Card>
   )
