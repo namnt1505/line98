@@ -37,6 +37,11 @@ jobs:
       - name: Install gcloud CLI components
         run: |
           sudo apt-get install google-cloud-cli
+      
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: game-460004
 
       - name: Deploy to Google Cloud Storage
         run: |
