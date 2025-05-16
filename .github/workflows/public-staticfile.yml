@@ -36,7 +36,7 @@ jobs:
 
       - name: Install gcloud CLI components
         run: |
-          gcloud components install gsutil
+          sudo apt-get install google-cloud-cli
 
       - name: Deploy to Google Cloud Storage
         run: |
