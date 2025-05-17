@@ -87,10 +87,11 @@ export function useGameState() {
       const finalPosition = movingBall.path[movingBall.path.length - 1]
 
       // Update the grid with the ball at its final position
+      // IMPORTANT: Use the original ball's color, not any color from a next ball indicator
       const newGrid = [...grid.map((row) => [...row])]
       newGrid[finalPosition.row][finalPosition.col].ball = {
         id: movingBall.ball.id,
-        color: movingBall.ball.color,
+        color: movingBall.ball.color, // Preserve the original ball's color
       }
 
       setGrid(newGrid)

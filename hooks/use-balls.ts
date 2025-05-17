@@ -63,9 +63,12 @@ export function useBalls() {
     newGrid[from.row][from.col].ball = null
     setGrid(newGrid)
 
-    // Start the animation
+    // Start the animation - make sure to preserve the original ball's color
     setMovingBall({
-      ball: { id: ball.id, color: ball.color },
+      ball: {
+        id: ball.id,
+        color: ball.color, // Ensure we're using the original ball's color
+      },
       path: [from, ...path],
       currentStep: 0,
     })
