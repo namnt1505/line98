@@ -13,8 +13,6 @@ export function useAudio() {
   const bgMusicRef = useRef<HTMLAudioElement | null>(null)
   const audioInitializedRef = useRef(false)
 
-  const savedMuteState = typeof window !== 'undefined' ? localStorage.getItem("line98MuteState") : null
-
   // Initialize audio elements
   useEffect(() => {
     // Create audio elements
@@ -27,17 +25,10 @@ export function useAudio() {
       bgMusicRef.current.volume = 0.5 // Set volume to 50%
     }
 
-    // Load mute state from localStorage
-
-    if (!savedMuteState) {
-      const muted = savedMuteState === "true"
-      setIsMuted(muted)
-
-      // Apply mute state to all audio elements
-      if (scoreAudioRef.current) scoreAudioRef.current.muted = muted
-      if (moveAudioRef.current) moveAudioRef.current.muted = muted
-      if (bgMusicRef.current) bgMusicRef.current.muted = muted
-    }
+    // Apply initial mute state to all audio elements
+    if (scoreAudioRef.current) scoreAudioRef.current.muted = isMuted
+    if (moveAudioRef.current) moveAudioRef.current.muted = isMuted
+    if (bgMusicRef.current) bgMusicRef.current.muted = isMuted
 
     audioInitializedRef.current = true
 
@@ -56,7 +47,7 @@ export function useAudio() {
         bgMusicRef.current = null
       }
     }
-  }, [savedMuteState])
+  }, [])
 
   // Add event listener for user interaction to start music
   useEffect(() => {
@@ -105,9 +96,6 @@ export function useAudio() {
         })
       }
     }
-
-    // Save mute state to localStorage
-    localStorage.setItem("line98MuteState", isMuted.toString())
   }, [isMuted])
 
   const toggleMute = () => {
@@ -131,7 +119,7 @@ export function useAudio() {
       })
     }
   }
-  console.log("isMuted", isMuted)
+
   return {
     isMuted,
     toggleMute,

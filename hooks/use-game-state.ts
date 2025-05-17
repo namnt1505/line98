@@ -10,7 +10,7 @@ const GRID_SIZE = 9
 const BALLS_PER_TURN = 3
 const REQUIRED_LINE_LENGTH = 5
 const MAX_HISTORY = 10 // Maximum number of states to keep in history
-const MOVE_ANIMATION_SPEED = 50 // ms per cell for movement animation
+const MOVE_ANIMATION_SPEED = 10 // ms per cell for movement animation (changed from 50 to 10)
 
 export function useGameState() {
   const [grid, setGrid] = useState<Cell[][]>([])

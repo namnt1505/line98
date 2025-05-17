@@ -45,10 +45,10 @@ export default function MovingBall({ color, path, currentStep }: MovingBallProps
     <div
       ref={ballRef}
       className={cn(
-        "absolute rounded-full transition-all duration-50 z-10",
+        "absolute rounded-full transition-all duration-10 z-10", // Changed duration from 50 to 10
         getBallColor(color),
-        isMovingHorizontally && "motion-safe:blur-[1px]",
-        isMovingVertically && "motion-safe:blur-[1px]",
+        isMovingHorizontally && "motion-safe:blur-[2px]", // Increased blur for faster movement
+        isMovingVertically && "motion-safe:blur-[2px]", // Increased blur for faster movement
       )}
       style={{
         transitionTimingFunction: "linear",
