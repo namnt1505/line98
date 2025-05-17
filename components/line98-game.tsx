@@ -13,6 +13,7 @@ export default function Line98Game() {
     grid,
     score,
     nextBalls,
+    nextBallPositions,
     selectedCell,
     gameOver,
     clickedBall,
@@ -47,6 +48,7 @@ export default function Line98Game() {
           selectedCell={selectedCell}
           clickedBall={clickedBall}
           movingBall={movingBall}
+          nextBallPositions={nextBallPositions}
           handleCellClick={handleCellClick}
         />
 

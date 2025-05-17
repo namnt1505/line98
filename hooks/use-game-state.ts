@@ -10,12 +10,13 @@ const GRID_SIZE = 9
 const BALLS_PER_TURN = 3
 const REQUIRED_LINE_LENGTH = 5
 const MAX_HISTORY = 10 // Maximum number of states to keep in history
-const MOVE_ANIMATION_SPEED = 5 // ms per cell for movement animation
+const MOVE_ANIMATION_SPEED = 50 // ms per cell for movement animation
 
 export function useGameState() {
   const [grid, setGrid] = useState<Cell[][]>([])
   const [score, setScore] = useState(0)
   const [nextBalls, setNextBalls] = useState<string[]>([])
+  const [nextBallPositions, setNextBallPositions] = useState<Array<{ position: Position; color: string }>>([])
   const [selectedCell, setSelectedCell] = useState<Position | null>(null)
   const [gameOver, setGameOver] = useState(false)
   const [ballIdCounter, setBallIdCounter] = useState(0)
@@ -36,15 +37,18 @@ export function useGameState() {
 
     if (savedGame) {
       try {
-        const { grid, score, nextBalls, ballIdCounter, gameOver } = JSON.parse(savedGame)
+        const { grid, score, nextBalls, ballIdCounter, gameOver, nextBallPositions } = JSON.parse(savedGame)
         setGrid(grid)
         setScore(score)
         setNextBalls(nextBalls)
         setBallIdCounter(ballIdCounter)
         setGameOver(gameOver)
+        if (nextBallPositions) {
+          setNextBallPositions(nextBallPositions)
+        }
 
         // Initialize history with the loaded state
-        setGameHistory([{ grid, score, nextBalls, ballIdCounter, gameOver }])
+        setGameHistory([{ grid, score, nextBalls, ballIdCounter, gameOver, nextBallPositions }])
       } catch (e) {
         // If there's an error parsing the saved game, initialize a new one
         initializeGame()
@@ -63,10 +67,11 @@ export function useGameState() {
         nextBalls,
         ballIdCounter,
         gameOver,
+        nextBallPositions,
       }
       localStorage.setItem("line98GameState", JSON.stringify(gameState))
     }
-  }, [grid, score, nextBalls, ballIdCounter, gameOver])
+  }, [grid, score, nextBalls, ballIdCounter, gameOver, nextBallPositions])
 
   // Animation effect for moving ball
   useEffect(() => {
@@ -141,6 +146,10 @@ export function useGameState() {
     const initialNextBalls = generateRandomColors(BALLS_PER_TURN)
     setNextBalls(initialNextBalls)
 
+    // Generate initial positions for next balls
+    const initialPositions = generateNextBallPositions(newGrid, initialNextBalls)
+    setNextBallPositions(initialPositions)
+
     // Add initial balls to the grid
     addNewBalls(newGrid, initialNextBalls)
 
@@ -154,6 +163,33 @@ export function useGameState() {
       .map(() => COLORS[Math.floor(Math.random() * COLORS.length)])
   }
 
+  const generateNextBallPositions = (currentGrid: Cell[][], colors: string[]) => {
+    const emptyCells = getEmptyCells(currentGrid)
+    const positions: Array<{ position: Position; color: string }> = []
+
+    // If there aren't enough empty cells, return empty array
+    if (emptyCells.length < colors.length) {
+      return positions
+    }
+
+    // Generate random positions for each color
+    for (let i = 0; i < colors.length; i++) {
+      if (emptyCells.length === 0) break
+
+      const randomIndex = Math.floor(Math.random() * emptyCells.length)
+      const position = emptyCells[randomIndex]
+
+      positions.push({
+        position,
+        color: colors[i],
+      })
+
+      emptyCells.splice(randomIndex, 1)
+    }
+
+    return positions
+  }
+
   const addNewBalls = (currentGrid: Cell[][], colors: string[]) => {
     // Save current state before adding new balls
     saveStateToHistory({
@@ -162,7 +198,11 @@ export function useGameState() {
       nextBalls,
       ballIdCounter,
       gameOver,
+      nextBallPositions,
     })
+
+    // Use the pre-generated positions if available
+    const positions = nextBallPositions.length === colors.length ? nextBallPositions.map((item) => item.position) : []
 
     const emptyCells = getEmptyCells(currentGrid)
 
@@ -174,25 +214,34 @@ export function useGameState() {
     const newGrid = [...currentGrid.map((row) => [...row])]
     const newNextBalls = generateRandomColors(BALLS_PER_TURN)
 
-    // Place new balls in random empty cells
+    // Place new balls in the pre-generated positions or random positions
     for (let i = 0; i < colors.length; i++) {
-      if (emptyCells.length === 0) break
+      let position: Position
 
-      const randomIndex = Math.floor(Math.random() * emptyCells.length)
-      const { row, col } = emptyCells[randomIndex]
+      if (positions.length > i) {
+        // Use pre-generated position
+        position = positions[i]
+      } else {
+        // Generate random position
+        const randomIndex = Math.floor(Math.random() * emptyCells.length)
+        position = emptyCells[randomIndex]
+        emptyCells.splice(randomIndex, 1)
+      }
 
-      newGrid[row][col].ball = {
+      newGrid[position.row][position.col].ball = {
         id: ballIdCounter + i,
         color: colors[i],
         isNew: true,
       }
-
-      emptyCells.splice(randomIndex, 1)
     }
 
     setBallIdCounter((prev) => prev + colors.length)
     setGrid(newGrid)
     setNextBalls(newNextBalls)
+
+    // Generate positions for the next set of balls
+    const newPositions = generateNextBallPositions(newGrid, newNextBalls)
+    setNextBallPositions(newPositions)
 
     // Check for lines after adding new balls
     setTimeout(() => {
@@ -260,6 +309,7 @@ export function useGameState() {
           nextBalls,
           ballIdCounter,
           gameOver,
+          nextBallPositions,
         })
 
         // Play move sound
@@ -528,6 +578,9 @@ export function useGameState() {
     setGameOver(previousState.gameOver)
     setSelectedCell(null)
     setMovingBall(null)
+    if (previousState.nextBallPositions) {
+      setNextBallPositions(previousState.nextBallPositions)
+    }
 
     // Update history
     setGameHistory(newHistory)
@@ -537,6 +590,7 @@ export function useGameState() {
     grid,
     score,
     nextBalls,
+    nextBallPositions,
     selectedCell,
     gameOver,
     clickedBall,

@@ -22,4 +22,5 @@ export type GameState = {
   nextBalls: string[]
   ballIdCounter: number
   gameOver: boolean
+  nextBallPositions: Array<{ position: Position; color: string }>
 }
