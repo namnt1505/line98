@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { cn } from "@/lib/utils"
 import type { Ball } from "@/types/game"
 
@@ -9,7 +10,7 @@ type BallProps = {
   isClicked: boolean
 }
 
-export default function BallComponent({ ball, isSelected, isClicked }: BallProps) {
+const BallComponent = memo(function BallComponent({ ball, isSelected, isClicked }: BallProps) {
   return (
     <div
       className={cn(
@@ -22,7 +23,9 @@ export default function BallComponent({ ball, isSelected, isClicked }: BallProps
       )}
     />
   )
-}
+})
+
+export default BallComponent
 
 function getBallColor(color: string) {
   switch (color) {
